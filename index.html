@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parser - Bulk Upload</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            text-align: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .selected-files {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .file-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item span {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-item button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .upload-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .upload-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-success {
+            border-left-color: #28a745;
+        }
+
+        .result-error {
+            border-left-color: #dc3545;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-box p {
+            opacity: 0.9;
+        }
+
+        .resumes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .resumes-table th,
+        .resumes-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .resumes-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .resumes-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .detail-view {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            margin-bottom: 15px;
+        }
+
+        .detail-item strong {
+            display: inline-block;
+            width: 200px;
+            color: #667eea;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Resume Parser</h1>
+            <p>AI-Powered Bulk Resume Processing with Groq & Neon DB</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card upload-section">
+            <h2>Upload Resumes</h2>
+            <p>Select multiple PDF or DOCX files</p>
+            
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc">
+                <label for="fileInput" class="file-input-label">
+                    📁 Choose Files
+                </label>
+            </div>
+
+            <div class="selected-files" id="selectedFiles"></div>
+
+            <button class="upload-btn" id="uploadBtn" disabled>
+                Upload & Process Resumes
+            </button>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="alertContainer"></div>
+
+        <div class="card" id="statsSection" style="display: none;">
+            <h2>Upload Summary</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <h3 id="totalCount">0</h3>
+                    <p>Total Files</p>
+                </div>
+                <div class="stat-box">
+                    <h3 id="successCount">0</h3>
+                    <p>Successful</p>
+                </div>
+                <div class="stat-box">
+                    <h3 id="failedCount">0</h3>
+                    <p>Failed</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Resumes Section -->
+        <div class="card">
+            <h2>All Parsed Resumes</h2>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="refreshBtn">
+                    🔄 Refresh List
+                </button>
+                <button class="btn btn-danger" id="clearAllBtn">
+                    🗑️ Clear All Resumes
+                </button>
+            </div>
+            <div id="resumesList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Change this to your FastAPI server URL
+        // For local development: http://localhost:8000
+        // For production: https://your-domain.com
+        const API_URL = 'http://localhost:8000';
+        let selectedFiles = [];
+
+        const fileInput = document.getElementById('fileInput');
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+
+        fileInput.addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            displaySelectedFiles();
+            uploadBtn.disabled = selectedFiles.length === 0;
+        });
+
+        function displaySelectedFiles() {
+            if (selectedFiles.length === 0) {
+                selectedFilesDiv.innerHTML = '<p style="color: #6c757d;">No files selected</p>';
+                return;
+            }
+
+            selectedFilesDiv.innerHTML = `
+                <h3>Selected Files (${selectedFiles.length})</h3>
+                ${selectedFiles.map((file, index) => `
+                    <div class="file-item">
+                        <span>${file.name} (${(file.size / 1024).toFixed(2)} KB)</span>
+                        <button onclick="removeFile(${index})">Remove</button>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displaySelectedFiles();
+            uploadBtn.disabled = selectedFiles.length === 0;
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) return;
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = 'Processing... <span class="loading"></span>';
+            progressBar.style.display = 'block';
+            progressFill.style.width = '50%';
+            progressFill.textContent = 'Processing...';
+
+            try {
+                const response = await fetch(`${API_URL}/upload/bulk`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                progressFill.style.width = '100%';
+                progressFill.textContent = 'Complete!';
+
+                showAlert(
+                    `Successfully processed ${result.successful} out of ${result.total} files`,
+                    result.failed === 0 ? 'success' : 'error'
+                );
+
+                // Update stats
+                document.getElementById('statsSection').style.display = 'block';
+                document.getElementById('totalCount').textContent = result.total;
+                document.getElementById('successCount').textContent = result.successful;
+                document.getElementById('failedCount').textContent = result.failed;
+
+                // Clear selection
+                selectedFiles = [];
+                fileInput.value = '';
+                displaySelectedFiles();
+
+                // Refresh the list
+                loadResumes();
+
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 2000);
+
+            } catch (error) {
+                showAlert('Error uploading files: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload & Process Resumes';
+            }
+        });
+
+        async function loadResumes() {
+            try {
+                const response = await fetch(`${API_URL}/resumes`);
+                const data = await response.json();
+
+                const resumesList = document.getElementById('resumesList');
+
+                if (data.count === 0) {
+                    resumesList.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No resumes found. Upload some resumes to get started!</p>';
+                    return;
+                }
+
+                resumesList.innerHTML = `
+                    <table class="resumes-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Experience</th>
+                                <th>Last Job</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.resumes.map(resume => `
+                                <tr>
+                                    <td>${resume.id}</td>
+                                    <td>${resume.name || 'N/A'}</td>
+                                    <td>${resume.email || 'N/A'}</td>
+                                    <td>${resume.total_years_experience ? resume.total_years_experience + ' years' : 'N/A'}</td>
+                                    <td>${resume.last_job?.title || 'N/A'} @ ${resume.last_job?.company || 'N/A'}</td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="viewDetails(${resume.id})" style="padding: 5px 10px; font-size: 0.8rem;">View</button>
+                                        <button class="btn btn-danger" onclick="deleteResume(${resume.id})" style="padding: 5px 10px; font-size: 0.8rem;">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr id="details-${resume.id}" style="display: none;">
+                                    <td colspan="6">
+                                        <div class="detail-view">
+                                            <div class="detail-item"><strong>Phone:</strong> ${resume.phone || 'N/A'}</div>
+                                            <div class="detail-item"><strong>Total Experience:</strong> ${resume.total_years_experience || 'N/A'} years</div>
+                                            <div class="detail-item"><strong>Last Job Duration:</strong> ${resume.last_job?.duration || 'N/A'}</div>
+                                            <div class="detail-item"><strong>Education:</strong> ${resume.education?.highest_degree || 'N/A'} from ${resume.education?.university || 'N/A'} (${resume.education?.graduation_year || 'N/A'})</div>
+                                            <div class="detail-item"><strong>Skills:</strong> ${resume.skills || 'N/A'}</div>
+                                            <div class="detail-item"><strong>Special Highlights:</strong> ${resume.special_highlights || 'N/A'}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                showAlert('Error loading resumes: ' + error.message, 'error');
+            }
+        }
+
+        function viewDetails(id) {
+            const detailRow = document.getElementById(`details-${id}`);
+            detailRow.style.display = detailRow.style.display === 'none' ? 'table-row' : 'none';
+        }
+
+        async function deleteResume(id) {
+            if (!confirm('Are you sure you want to delete this resume?')) return;
+
+            try {
+                await fetch(`${API_URL}/resumes/${id}`, {
+                    method: 'DELETE'
+                });
+                showAlert('Resume deleted successfully', 'success');
+                loadResumes();
+            } catch (error) {
+                showAlert('Error deleting resume: ' + error.message, 'error');
+            }
+        }
+
+        refreshBtn.addEventListener('click', loadResumes);
+
+        clearAllBtn.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to delete ALL resumes? This cannot be undone.')) return;
+
+            try {
+                await fetch(`${API_URL}/resumes`, {
+                    method: 'DELETE'
+                });
+                showAlert('All resumes deleted successfully', 'success');
+                loadResumes();
+                document.getElementById('statsSection').style.display = 'none';
+            } catch (error) {
+                showAlert('Error deleting resumes: ' + error.message, 'error');
+            }
+        });
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Load resumes on page load
+        loadResumes();
+    </script>
+</body>
+</html>
