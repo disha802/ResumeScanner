@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from typing import List
 import os
@@ -9,6 +9,8 @@ from tortoise import Tortoise
 from tortoise.transactions import in_transaction
 from contextlib import asynccontextmanager
 import uvicorn
+import io
+import pandas as pd
 
 from models import Resume
 from services import ResumeParserService
@@ -102,9 +104,11 @@ async def upload_bulk_resumes(files: List[UploadFile] = File(...)):
         
         # Use transaction for each file to ensure atomicity
         # If anything fails, the database insert is rolled back
+        connection = Tortoise.get_connection("default")
+        
         try:
-            # Start transaction - correct Tortoise ORM syntax
-            async with in_transaction() as transaction:
+            # Start transaction with proper connection
+            async with in_transaction(connection_name="default") as conn:
                 # Read file content
                 content = await file.read()
                 print(f"Processing file: {file.filename}, size: {len(content)} bytes")
@@ -115,7 +119,7 @@ async def upload_bulk_resumes(files: List[UploadFile] = File(...)):
                 
                 # Save to database (within transaction)
                 # If this fails, transaction rolls back automatically
-                resume = await Resume.create(**parsed_data)
+                resume = await Resume.create(**parsed_data, using_db=conn)
                 print(f"Successfully saved resume ID: {resume.id}")
                 
                 results["successful"] += 1
@@ -179,6 +183,60 @@ async def delete_all_resumes():
     """
     await Resume.all().delete()
     return {"message": "All resumes deleted successfully"}
+
+@app.get("/export/excel")
+async def export_to_excel():
+    """
+    Export all resumes to Excel format
+    """
+    try:
+        # Get all resumes
+        resumes = await Resume.all()
+        
+        if not resumes:
+            raise HTTPException(status_code=404, detail="No resumes found to export")
+        
+        # Convert to list of dictionaries
+        data = []
+        for resume in resumes:
+            data.append({
+                "ID": resume.id,
+                "Name": resume.name,
+                "Email": resume.email,
+                "Phone": resume.phone,
+                "Total Experience (Years)": resume.total_years_experience,
+                "Last Job Title": resume.last_job_title,
+                "Last Job Company": resume.last_job_company,
+                "Last Job Duration": resume.last_job_duration,
+                "Highest Degree": resume.highest_degree,
+                "University": resume.university,
+                "Graduation Year": resume.graduation_year,
+                "Skills": resume.skills,
+                "Special Highlights": resume.special_highlights,
+                "Created At": resume.created_at.strftime("%Y-%m-%d %H:%M:%S") if resume.created_at else None
+            })
+        
+        # Create DataFrame
+        df = pd.DataFrame(data)
+        
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Resumes')
+        
+        output.seek(0)
+        
+        # Return as downloadable file
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": "attachment; filename=resumes_export.xlsx"
+            }
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error exporting to Excel: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

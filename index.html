@@ -361,6 +361,9 @@
                 <button class="btn btn-primary" id="refreshBtn">
                     🔄 Refresh List
                 </button>
+                <button class="btn btn-primary" id="exportBtn" style="background: #28a745;">
+                    📥 Download Excel
+                </button>
                 <button class="btn btn-danger" id="clearAllBtn">
                     🗑️ Clear All Resumes
                 </button>
@@ -383,6 +386,7 @@
         const progressFill = document.getElementById('progressFill');
         const refreshBtn = document.getElementById('refreshBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportBtn = document.getElementById('exportBtn');
 
         fileInput.addEventListener('change', (e) => {
             selectedFiles = Array.from(e.target.files);
@@ -548,6 +552,39 @@
         }
 
         refreshBtn.addEventListener('click', loadResumes);
+
+        exportBtn.addEventListener('click', async () => {
+            try {
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = '⏳ Generating Excel...';
+                
+                const response = await fetch(`${API_URL}/export/excel`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to export data');
+                }
+                
+                // Get the blob from response
+                const blob = await response.blob();
+                
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `resumes_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showAlert('Excel file downloaded successfully!', 'success');
+            } catch (error) {
+                showAlert('Error exporting to Excel: ' + error.message, 'error');
+            } finally {
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = '📥 Download Excel';
+            }
+        });
 
         clearAllBtn.addEventListener('click', async () => {
             if (!confirm('Are you sure you want to delete ALL resumes? This cannot be undone.')) return;
