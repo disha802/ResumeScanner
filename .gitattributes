@@ -1,0 +1,69 @@
+# Git Attributes - Define how Git handles different file types
+# This prevents Git from modifying binary files
+
+# ============================================================================
+# BINARY FILES - Do NOT modify line endings
+# ============================================================================
+*.pdf binary
+*.xlsx binary
+*.xls binary
+*.docx binary
+*.doc binary
+*.pptx binary
+*.ppt binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.7z binary
+*.rar binary
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.webp binary
+
+# Audio/Video
+*.mp3 binary
+*.mp4 binary
+*.avi binary
+*.mov binary
+*.wav binary
+
+# ============================================================================
+# TEXT FILES - Normalize line endings
+# ============================================================================
+# Automatically normalize line endings for text files
+* text=auto
+
+# Python files - always use LF (Unix-style)
+*.py text eol=lf
+
+# Web files - always use LF
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+
+# Markdown - always use LF
+*.md text eol=lf
+
+# Configuration files - always use LF
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Shell scripts - always use LF
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Batch files - always use CRLF (Windows)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

@@ -1,15 +1,34 @@
 # ============================================================================
 # FILE: .gitignore
+# ResumeScanner - Files to exclude from Git
 # ============================================================================
-# Python
+
+# ============================================================================
+# CRITICAL - NEVER COMMIT THESE
+# ============================================================================
+# Environment variables (contains API keys and database credentials)
+.env
+.env.local
+.env.*.local
+
+# ============================================================================
+# PYTHON
+# ============================================================================
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
+
+# Virtual environments
 env/
 venv/
 ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+.Python
 build/
 develop-eggs/
 dist/
@@ -22,26 +41,163 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Environment variables
-.env
+# PyInstaller
+*.manifest
+*.spec
 
-# IDE
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ============================================================================
+# DEBUG & TEST FILES
+# ============================================================================
+# Debug scripts and outputs
+debug_*.py
+debug_*.txt
+test_*.py
+reproduce_*.py
+dump_*.py
+evaluate_*.py
+
+# Debug/test output files
+debug_output.txt
+debug_log_utf8.txt
+debug_samira.txt
+debug_text.txt
+final_evaluation.txt
+full_field_verification.txt
+results.txt
+results_log.txt
+
+# Test/dummy data
+dummy/
+test_data/
+sample_resumes/
+
+# ============================================================================
+# IDE & EDITORS
+# ============================================================================
+# VSCode
 .vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
 .idea/
+*.iml
+*.iws
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
 *.swp
 *.swo
 *~
+.*.swp
 
-# OS
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================================================
+# OPERATING SYSTEM
+# ============================================================================
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# Logs
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================================================
+# LOGS & DATABASES
+# ============================================================================
+# Log files
 *.log
+logs/
+*.log.*
 
-#dummy data
-dummy/
+# Local SQLite databases (if any)
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================================================
+# TEMPORARY FILES
+# ============================================================================
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+.~*
+
+# ============================================================================
+# PROJECT SPECIFIC
+# ============================================================================
+# Uploaded resume files (if stored locally)
+uploads/
+resumes/
+resume_files/
+
+# Exported Excel files (generated dynamically)
+*.xlsx
+!requirements.xlsx  # If you have a requirements Excel file, uncomment this
+
+# PDF exports (if generated)
+exports/
+
+# Cache directories
+.cache/
+cache/
+
+# ============================================================================
+# OPTIONAL - UNCOMMENT IF NEEDED
+# ============================================================================
+# If you want to exclude the PDF generator script (keep it for now)
+# generate_pdf.py
+
+# If you want to exclude the user manual PDF (keep it for documentation)
+# USER_MANUAL.pdf
+
+# If you have local configuration files
+# config.local.json
+# settings.local.py

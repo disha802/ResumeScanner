@@ -2,6 +2,7 @@ import io
 import json
 from groq import Groq
 from PyPDF2 import PdfReader
+import pdfplumber
 from docx import Document
 from typing import Dict, Any
 
@@ -11,13 +12,37 @@ class ResumeParserService:
         self.model_name = model_name
     
     def extract_text_from_pdf(self, content: bytes) -> str:
-        """Extract text from PDF file"""
-        pdf_file = io.BytesIO(content)
-        reader = PdfReader(pdf_file)
+        """Extract text from PDF file with fallback support for various encodings"""
         text = ""
-        for page in reader.pages:
-            text += page.extract_text() + "\n"
-        return text
+        
+        # Try PyPDF2 first (faster)
+        try:
+            pdf_file = io.BytesIO(content)
+            reader = PdfReader(pdf_file)
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+            
+            # If we got meaningful text (more than just whitespace), return it
+            if text.strip() and len(text.strip()) > 50:
+                return text
+        except Exception as e:
+            print(f"PyPDF2 extraction failed: {e}. Trying pdfplumber...")
+        
+        # Fallback to pdfplumber for better encoding support
+        try:
+            pdf_file = io.BytesIO(content)
+            with pdfplumber.open(pdf_file) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+            return text
+        except Exception as e:
+            print(f"pdfplumber extraction also failed: {e}")
+            # Return whatever we got, even if minimal
+            return text if text else ""
     
     def extract_text_from_docx(self, content: bytes) -> str:
         """Extract text from DOCX file"""
@@ -57,12 +82,18 @@ IMPORTANT INSTRUCTIONS:
    - DIRECTLY EXCLUDE education years. Graduation years are NOT work experience.
    - Look for "Work Experience", "Professional Experience", "Employment History" sections.
    - Calculate the sum of durations for each job role.
-   - IGNORE dates associated with finding "Education", "University", "College", "Degree".
+   - IGNORE dates associated with "Education", "University", "College", "Degree".
    - Example matches to IGNORE: "2020-2024 Bachelor of Science", "Graduated 2023".
    - If a candidate graduated in {current_year - 1}, their experience starts from their first job, NOT {current_year - 5}.
 3. Education years (like Bachelor's 2020-2024) should ONLY go in graduation_year field.
-4. If the only dates present are for education, total_years_experience should be 0.
-5. HANDLING SCRAMBLED TEXT (CRITICAL):
+4. If the only dates present are for education, total_years_experience should be 0 (not null, not NA).
+5. DATE RANGE CALCULATION (CRITICAL):
+   - FIRST check if the job duration mentions "Present", "Current", "Ongoing", or "Till Date".
+   - If "Present" is mentioned: Calculate from start date to {current_year}.
+   - If an EXPLICIT END DATE is given (e.g., "2020-2023"): Use THAT end date, NOT the current year.
+   - Example: "2020-2023" = 3 years (NOT 5 years by counting to 2025).
+   - Example: "2020-Present" = 5 years (counting to 2025).
+6. HANDLING SCRAMBLED TEXT (CRITICAL):
    - In some PDFs, all dates appear at the end of the text, detached from sections.
    - You must reconstruct the timeline to find the "True Professional Start Date".
    - IGNORE early date clusters if they overlap with typical education ages or are disconnected from the main work block.
@@ -70,15 +101,20 @@ IMPORTANT INSTRUCTIONS:
      - The earlier dates (2012-2017) are likely Degrees or Internships. IGNORE THEM.
      - ONLY count the continuous block of recent professional experience.
    - For Jonathan Patterson (example): 2018-2023 is Work. 2012-2017 is Education. Total should be 5 years.
-6. HANDLING FUTURE DATES (CRITICAL):
+7. HANDLING FUTURE DATES (CRITICAL):
    - Treat future dates (e.g., 2027-2030) as valid experience (scenario/projection).
    - If a candidate has a job "2027 - 2030", count this as 3 years of experience.
    - Do NOT ignore dates just because they are in the future.
    - However, if the future date is for Graduation (e.g. "Expected 2027"), DO NOT count it as experience.
-7. OVERLAPPING DATES & INTERNSHIPS:
+8. OVERLAPPING DATES & INTERNSHIPS:
    - If timelines overlap (e.g., 2015-2020 and 2018-2020), prioritize the explicit Professional Job Titles.
    - Exclude "Internship", "Volunteer", or "Student" roles if they pre-date the main professional career.
    - For Jonathan Patterson (scrambled specific): 2018-2023 is the valid work block (5 years). The 2013-2015/2015-2020 dates are pre-professional/internships and should be excluded.
+9. SPELL CHECKING (CRITICAL):
+   - Double-check spellings for: name, last_job_title, last_job_company, university, highest_degree.
+   - Correct obvious typos and OCR errors (e.g., "Unlverslty" -> "University").
+   - Preserve proper nouns and company names as written unless clearly misspelled.
+
 
 Extract these fields:
 1. name: Full name of the candidate
